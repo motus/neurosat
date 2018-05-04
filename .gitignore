@@ -4,5 +4,6 @@
 *.iml
 data/
 dimacs/
+snapshots/
 python/PyMiniSolvers/
 __pycache__/

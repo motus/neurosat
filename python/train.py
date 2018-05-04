@@ -37,7 +37,11 @@ parser.add_argument('--n_saves_to_keep', action='store', dest='n_saves_to_keep',
 
 opts = parser.parse_args()
 
-setattr(opts, 'commit', subprocess.check_output(['git', 'rev-parse', 'HEAD']).strip())
+try:
+    setattr(opts, 'commit', subprocess.check_output(['git', 'rev-parse', 'HEAD']).strip())
+except:
+    sys.stderr.write('Cannot run git to determine current commit')
+
 setattr(opts, 'hostname', subprocess.check_output(['hostname']).strip())
 
 if opts.run_id is None: opts.run_id = random.randrange(sys.maxsize)
