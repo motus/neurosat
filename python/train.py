@@ -40,7 +40,7 @@ opts = parser.parse_args()
 try:
     setattr(opts, 'commit', subprocess.check_output(['git', 'rev-parse', 'HEAD']).strip())
 except:
-    sys.stderr.write('Cannot run git to determine current commit')
+    sys.stderr.write('Could not run git to determine current commit\n')
 
 setattr(opts, 'hostname', subprocess.check_output(['hostname']).strip())
 
