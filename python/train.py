@@ -56,4 +56,7 @@ g = NeuroSAT(opts)
 for epoch in range(opts.n_epochs):
     result = g.train_epoch(epoch)
     (efilename, etrain_cost, etrain_mat, lr, etime) = result
-    print("[%d] %.4f (%.2f, %.2f, %.2f, %.2f) [%ds]" % (epoch, etrain_cost, etrain_mat.ff, etrain_mat.ft, etrain_mat.tf, etrain_mat.tt, etime))
+    print("[%d] %.6f (%.6f, %.6f, %.6f, %.6f) accuracy %.6f [%ds]" % (
+        epoch, etrain_cost,
+        etrain_mat.ff, etrain_mat.ft, etrain_mat.tf, etrain_mat.tt,
+        etrain_mat.ff + etrain_mat.tt, etime))
