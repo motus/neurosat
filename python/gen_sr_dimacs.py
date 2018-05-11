@@ -60,8 +60,23 @@ def gen_iclause_pair(opts):
     iclause_sat = [- iclause_unsat[0] ] + iclause_unsat[1:]
     return n, iclauses, iclause_unsat, iclause_sat
 
-if __name__ == "__main__":
-    parser = argparse.ArgumentParser()
+
+def gen_iclause_pair2(opts):
+    """
+    Generate a pair of UNSAT/SAT problems
+
+    Arguments:
+        opts -- problem generation parameters.
+            Must have `min_n`, `max_n`, `p_k_2`, and `p_geo` attributes.
+
+    Returns:
+        `(int, [], [])` -- a triplet of (n_vars, UNSAT problem, SAT problem).
+    """
+    n_vars, iclauses, iclause_unsat, iclause_sat = gen_iclause_pair(opts)
+    return (n_vars, iclauses + [iclause_unsat], iclauses + [iclause_sat])
+
+
+def init_opts(parser):
     parser.add_argument('out_dir', action='store', type=str)
     parser.add_argument('n_pairs', action='store', type=int)
 
@@ -80,13 +95,14 @@ if __name__ == "__main__":
     if opts.py_seed is not None: random.seed(opts.py_seed)
     if opts.np_seed is not None: np.random.seed(opts.np_seed)
 
+    return opts
+
+
+if __name__ == "__main__":
+    opts = init_opts(argparse.ArgumentParser())
     for pair in range(opts.n_pairs):
         if pair % opts.print_interval == 0: print("[%d]" % pair)
-        n_vars, iclauses, iclause_unsat, iclause_sat = gen_iclause_pair(opts)
+        n_vars, iclauses_unsat, iclauses_sat = gen_iclause_pair2(opts)
         out_filenames = mk_out_filenames(opts, n_vars, pair)
-
-        iclauses.append(iclause_unsat)
-        write_dimacs_to(n_vars, iclauses, out_filenames[0])
-
-        iclauses[-1] = iclause_sat
-        write_dimacs_to(n_vars, iclauses, out_filenames[1])
+        write_dimacs_to(n_vars, iclauses_unsat, out_filenames[0])
+        write_dimacs_to(n_vars, iclauses_unsat, out_filenames[1])
