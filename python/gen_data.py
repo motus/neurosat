@@ -41,7 +41,7 @@ def get_splits(n_pairs, min_n, max_n):
 
 
 def mk_dataset_filename(opts, n_batches, n_file):
-    return "%s/f=%04dnpb=%04d_nb=%04d.pkl" % (opts.out_dir, n_file, opts.max_nodes_per_batch, n_batches)
+    return "%s/f=%03dnpb=%d_nb=%04d.pkl" % (opts.out_dir, n_file, opts.max_nodes_per_batch, n_batches)
 
 
 parser = argparse.ArgumentParser()
