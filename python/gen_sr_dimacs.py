@@ -36,8 +36,13 @@ def generate_k_iclause(n, k):
     vs = np.random.choice(n, size=min(n, k), replace=False)
     return [v + 1 if random.random() < 0.5 else -(v + 1) for v in vs]
 
+
 def gen_iclause_pair(opts):
-    n = random.randint(opts.min_n, opts.max_n)
+    return _gen_iclause_pair(opts.min_n, opts.max_n, opts.p_k_2, opts.p_geo)
+
+
+def _gen_iclause_pair(min_n, max_n, p_k_2, p_geo):
+    n = random.randint(min_n, max_n)
 
     solver = minisolvers.MinisatSolver()
     for i in range(n): solver.new_var(dvar=True)
@@ -45,8 +50,8 @@ def gen_iclause_pair(opts):
     iclauses = []
 
     while True:
-        k_base = 1 if random.random() < opts.p_k_2 else 2
-        k = k_base + np.random.geometric(opts.p_geo)
+        k_base = 1 if random.random() < p_k_2 else 2
+        k = k_base + np.random.geometric(p_geo)
         iclause = generate_k_iclause(n, k)
 
         solver.add_clause(iclause)
@@ -61,19 +66,21 @@ def gen_iclause_pair(opts):
     return n, iclauses, iclause_unsat, iclause_sat
 
 
-def gen_iclause_pair2(opts):
+def gen_iclause_pair_n_vars(opts, n_vars):
     """
-    Generate a pair of UNSAT/SAT problems
+    Generate a pair of UNSAT/SAT problems with the given number of variables.
 
     Arguments:
         opts -- problem generation parameters.
             Must have `min_n`, `max_n`, `p_k_2`, and `p_geo` attributes.
 
     Returns:
-        `(int, [], [])` -- a triplet of (n_vars, UNSAT problem, SAT problem).
+        `([], [])` -- a pair of (UNSAT problem, SAT problem).
     """
-    n_vars, iclauses, iclause_unsat, iclause_sat = gen_iclause_pair(opts)
-    return (n_vars, iclauses + [iclause_unsat], iclauses + [iclause_sat])
+    _, iclauses, iclause_unsat, iclause_sat = \
+        _gen_iclause_pair(n_vars, n_vars, opts.p_k_2, opts.p_geo)
+
+    return (iclauses + [iclause_unsat], iclauses + [iclause_sat])
 
 
 def init_opts(parser):
@@ -102,7 +109,7 @@ if __name__ == "__main__":
     opts = init_opts(argparse.ArgumentParser())
     for pair in range(opts.n_pairs):
         if pair % opts.print_interval == 0: print("[%d]" % pair)
-        n_vars, iclauses_unsat, iclauses_sat = gen_iclause_pair2(opts)
+        n_vars, iclauses, iclauses_unsat, iclauses_sat = gen_iclause_pair(opts)
         out_filenames = mk_out_filenames(opts, n_vars, pair)
-        write_dimacs_to(n_vars, iclauses_unsat, out_filenames[0])
-        write_dimacs_to(n_vars, iclauses_unsat, out_filenames[1])
+        write_dimacs_to(n_vars, iclauses + [iclauses_unsat], out_filenames[0])
+        write_dimacs_to(n_vars, iclauses + [iclauses_sat], out_filenames[1])
