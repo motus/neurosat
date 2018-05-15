@@ -21,7 +21,7 @@ import pickle
 import argparse
 import sys
 from solver import solve_sat
-from mk_problem import mk_batch_problem
+from mk_problem import mk_batch_problem, mk_tf_batch
 from gen_sr_dimacs import init_opts, gen_iclause_pair_n_vars
 
 
@@ -37,14 +37,19 @@ def mk_dataset_filename(opts, n_batches, n_file):
 
 
 parser = argparse.ArgumentParser()
-parser.add_argument('--max_nodes_per_batch', action='store', type=int)
-parser.add_argument('--n_files', action='store', type=int, default=1)
+parser.add_argument('--max_nodes_per_batch', type=int)
+parser.add_argument('--n_files', type=int, default=1, help='Number of files to generate')
+parser.add_argument('--pickle_tf', action='store_true', default=False, help='If True, save data in TensorFlow format')
+
 
 opts = init_opts(parser)
 
 # create directory
 if not os.path.exists(opts.out_dir):
     os.mkdir(opts.out_dir)
+
+batch_func = mk_tf_batch if opts.pickle_tf else mk_batch_problem
+
 
 for n_file in range(opts.n_files):
 
@@ -74,7 +79,7 @@ for n_file in range(opts.n_files):
                 n_nodes_in_batch += n_nodes
 
                 if n_nodes_in_batch >= opts.max_nodes_per_batch:
-                    batches.append(mk_batch_problem(problems))
+                    batches.append(batch_func(problems))
                     print("batch %4d done (%2d vars, %6d problems)..." % (n_batch, n_vars, len(problems)))
                     problems = []
                     n_nodes_in_batch = 0
@@ -83,7 +88,7 @@ for n_file in range(opts.n_files):
         prev_pairs = total_pairs
 
         if problems:
-            batches.append(mk_batch_problem(problems))
+            batches.append(batch_func(problems))
             print("batch %4d done (%2d vars, %6d problems)..." % (n_batch, n_vars, len(problems)))
             problems = []
             n_nodes_in_batch = 0

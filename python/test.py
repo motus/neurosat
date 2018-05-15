@@ -32,6 +32,7 @@ parser.add_argument('test_dir', action='store', type=str, help='Directory with d
 parser.add_argument('restore_id', action='store', type=int)
 parser.add_argument('restore_epoch', action='store', type=int)
 parser.add_argument('n_rounds', action='store', type=int)
+parser.add_argument('--pickle_tf', action='store_true', default=False, help='If True, the input is in TensorFlow format')
 
 opts = parser.parse_args()
 setattr(opts, 'run_id', None)

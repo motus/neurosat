@@ -35,6 +35,9 @@ class NeuroSAT(object):
         self.build_network()
         self.train_problems_loader = None
 
+        self.build_feed_dict = self.build_feed_dict_from_tf \
+                               if opts.pickle_tf else self.build_feed_dict_from_obj
+
     def init_random_seeds(self):
         tf.set_random_seed(self.opts.tf_seed)
         np.random.seed(self.opts.np_seed)
@@ -172,7 +175,7 @@ class NeuroSAT(object):
         snapshot = "snapshots/run%d/snap-%d" % (self.opts.restore_id, self.opts.restore_epoch)
         self.saver.restore(self.sess, snapshot)
 
-    def build_feed_dict(self, problem):
+    def build_feed_dict_from_obj(self, problem):
         d = {}
         d[self.n_vars] = problem.n_vars
         d[self.n_lits] = problem.n_lits
@@ -183,7 +186,17 @@ class NeuroSAT(object):
                                                  dense_shape=[problem.n_lits, problem.n_clauses])
 
         d[self.is_sat] = problem.is_sat
-        return d
+        return (d, problem.is_sat)
+
+    def build_feed_dict_from_tf(self, problem):
+        (n_vars, n_lits, n_clauses, is_sat, l_mat) = problem
+        return ({
+            self.n_vars: n_vars,
+            self.n_lits: n_lits,
+            self.n_clauses: n_clauses,
+            self.is_sat: is_sat,
+            self.L_unpack: l_mat
+        }, is_sat)
 
     def train_epoch(self, epoch):
         if self.train_problems_loader is None:
@@ -196,10 +209,10 @@ class NeuroSAT(object):
 
         train_problems, train_filename = self.train_problems_loader.get_next()
         for problem in train_problems:
-            d = self.build_feed_dict(problem)
+            d, is_sat = self.build_feed_dict(problem)
             _, logits, cost = self.sess.run([self.apply_gradients, self.logits, self.cost], feed_dict=d)
             epoch_train_cost += cost
-            epoch_train_mat.update(problem.is_sat, logits > 0)
+            epoch_train_mat.update(is_sat, logits > 0)
 
         epoch_train_cost /= len(train_problems)
         epoch_train_mat = epoch_train_mat.get_percentages()
@@ -221,10 +234,10 @@ class NeuroSAT(object):
             epoch_test_mat = ConfusionMatrix()
 
             for problem in test_problems:
-                d = self.build_feed_dict(problem)
+                d, is_sat = self.build_feed_dict(problem)
                 logits, cost = self.sess.run([self.logits, self.cost], feed_dict=d)
                 epoch_test_cost += cost
-                epoch_test_mat.update(problem.is_sat, logits > 0)
+                epoch_test_mat.update(is_sat, logits > 0)
 
             epoch_test_cost /= len(test_problems)
             epoch_test_mat = epoch_test_mat.get_percentages()
@@ -241,7 +254,7 @@ class NeuroSAT(object):
         n_batches = len(problem.is_sat)
         n_vars_per_batch = problem.n_vars // n_batches
 
-        d = self.build_feed_dict(problem)
+        d, _is_sat = self.build_feed_dict(problem)
         all_votes, final_lits, logits, costs = self.sess.run([self.all_votes, self.final_lits, self.logits, self.predict_costs], feed_dict=d)
 
         solutions = []

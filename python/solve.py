@@ -32,12 +32,15 @@ parser.add_argument('solve_dir', action='store', type=str)
 parser.add_argument('restore_id', action='store', type=int)
 parser.add_argument('restore_epoch', action='store', type=int)
 parser.add_argument('n_rounds', action='store', type=int)
+parser.add_argument('--pickle_tf', action='store_true', default=False, help='If True, the input is in TensorFlow format')
 
 opts = parser.parse_args()
 setattr(opts, 'run_id', None)
 setattr(opts, 'n_saves_to_keep', 1)
 
 print(opts)
+
+assert not opts.pickle_tf, "TensorFlow format is not supported yet"
 
 g = NeuroSAT(opts)
 g.restore()
