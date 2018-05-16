@@ -20,6 +20,8 @@ import random
 import pickle
 import argparse
 import sys
+import multiprocessing
+
 from solver import solve_sat
 from mk_problem import mk_batch_problem
 from gen_sr_dimacs import init_opts, gen_iclause_pair_n_vars
@@ -37,20 +39,7 @@ def mk_dataset_filename(opts, n_batches, n_file, n_problems):
         opts.out_dir, n_file, opts.max_nodes_per_batch, n_batches, n_problems)
 
 
-parser = argparse.ArgumentParser()
-parser.add_argument('--max_nodes_per_batch', type=int)
-parser.add_argument('--n_files', type=int, default=1, help='Number of files to generate')
-
-
-opts = init_opts(parser)
-
-# create directory
-if not os.path.exists(opts.out_dir):
-    os.mkdir(opts.out_dir)
-
-n_problems_total = 0
-
-for n_file in range(opts.n_files):
+def gen_file(n_file):
 
     batches = []
     problems = []
@@ -79,12 +68,11 @@ for n_file in range(opts.n_files):
                     "problem=%08d_vars=%02d_sat=%d" % (n_problems, n_vars, is_sat),
                     n_vars, iclauses, is_sat))
                 n_problems += 1
-                n_problems_total += 1
                 n_nodes_in_batch += n_nodes
 
                 if n_nodes_in_batch >= opts.max_nodes_per_batch:
                     batches.append(mk_batch_problem(problems))
-                    print("batch %4d done (%2d vars, %6d problems)..." % (n_batch, n_vars, len(problems)))
+                    print("file %03d batch %4d done (%2d vars, %6d problems)..." % (n_file, n_batch, n_vars, len(problems)))
                     problems = []
                     n_nodes_in_batch = 0
                     n_batch += 1
@@ -93,17 +81,34 @@ for n_file in range(opts.n_files):
 
         if problems:
             batches.append(mk_batch_problem(problems))
-            print("batch %4d done (%2d vars, %6d problems)..." % (n_batch, n_vars, len(problems)))
+            print("file %03d batch %4d done (%2d vars, %6d problems)..." % (n_file, n_batch, n_vars, len(problems)))
             problems = []
             n_nodes_in_batch = 0
             n_batch += 1
 
-    if batches:
-        dataset_filename = mk_dataset_filename(opts, len(batches), n_file, n_problems)
-        print("# Writing %d batches and %d problems to %s..."
-              % (len(batches), n_problems, dataset_filename))
-        random.shuffle(batches)
-        with open(dataset_filename, 'wb') as f_dump:
-            pickle.dump(batches, f_dump)
+    dataset_filename = mk_dataset_filename(opts, len(batches), n_file, n_problems)
+    print("# Writing %d batches and %d problems to %s..."
+            % (len(batches), n_problems, dataset_filename))
+    random.shuffle(batches)
+    with open(dataset_filename, 'wb') as f_dump:
+        pickle.dump(batches, f_dump)
 
-print("Done! Generated %d problems." % n_problems_total)
+    return n_problems
+
+
+###############################################################
+
+parser = argparse.ArgumentParser()
+parser.add_argument('--max_nodes_per_batch', type=int, default=60000)
+parser.add_argument('--n_files', type=int, default=1, help='Number of files to generate')
+parser.add_argument('--n_processes', type=int, default=1, help='Number of processes to spawn')
+
+opts = init_opts(parser)
+
+# create directory
+if not os.path.exists(opts.out_dir):
+    os.mkdir(opts.out_dir)
+
+with multiprocessing.Pool(processes=opts.n_processes) as pool:
+    n_problems_total = sum(pool.imap_unordered(gen_file, range(opts.n_files)))
+    print("Done! Generated %d problems." % n_problems_total)
