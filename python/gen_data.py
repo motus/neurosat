@@ -26,10 +26,12 @@ from gen_sr_dimacs import init_opts, gen_iclause_pair_n_vars
 
 
 def get_splits(n_pairs, min_n, max_n):
-    return list(zip(range(min_n, max_n),
-                    sorted(random.randint(0, n_pairs)
-                           for _ in range(max_n - min_n)))) \
-           + [(max_n, n_pairs)]
+    pairs = list(zip(
+        range(min_n, max_n),
+        sorted(random.randint(0, n_pairs)
+               for _ in range(max_n - min_n)))) + [(max_n, n_pairs)]
+    random.shuffle(pairs)
+    return pairs
 
 
 def mk_dataset_filename(opts, n_batches, n_file):
