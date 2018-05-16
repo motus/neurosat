@@ -34,7 +34,6 @@ parser.add_argument('--restore_id', action='store', dest='restore_id', type=int,
 parser.add_argument('--restore_epoch', action='store', dest='restore_epoch', type=int, default=None)
 parser.add_argument('--n_epochs', action='store', dest='n_epochs', type=int, default=100000, help='Number of epochs through data')
 parser.add_argument('--n_saves_to_keep', action='store', dest='n_saves_to_keep', type=int, default=4, help='Number of saved models to keep')
-parser.add_argument('--pickle_tf', action='store_true', default=False, help='If True, the input is in TensorFlow format')
 
 opts = parser.parse_args()
 

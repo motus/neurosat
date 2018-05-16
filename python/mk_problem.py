@@ -84,11 +84,3 @@ def mk_batch_problem(problems):
         offset += n_vars
 
     return Problem(offset, all_iclauses, all_is_sat, all_n_cells, all_dimacs)
-
-
-def mk_tf_batch(problems):
-    problem = mk_batch_problem(problems)
-    return (problem.n_vars, problem.n_lits, problem.n_clauses, problem.is_sat,
-            tf.SparseTensorValue(indices=problem.L_unpack_indices,
-                                 values=np.ones(problem.L_unpack_indices.shape[0]),
-                                 dense_shape=[problem.n_lits, problem.n_clauses]))
