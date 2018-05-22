@@ -50,12 +50,12 @@ def gen_file(n_file):
     for n_vars, total_pairs in get_splits(opts.n_pairs, opts.min_n, opts.max_n):
 
         prev_pairs = 0
-        for pair in range(total_pairs - prev_pairs + 1):
+        for _pair in range(total_pairs - prev_pairs + 1):
 
             iclauses_unsat, iclauses_sat = gen_iclause_pair_n_vars(opts, n_vars)
 
             n_clauses = len(iclauses_sat)  # same number for sat/unsat
-            n_cells = sum([len(iclause) for iclause in iclauses_sat])
+            # n_cells = sum([len(iclause) for iclause in iclauses_sat])
             n_nodes = 2 * n_vars + n_clauses
 
             if n_nodes > opts.max_nodes_per_batch:
@@ -63,7 +63,7 @@ def gen_file(n_file):
 
             for iclauses in (iclauses_unsat, iclauses_sat):
 
-                is_sat, stats = solve_sat(n_vars, iclauses)
+                is_sat, _stats = solve_sat(n_vars, iclauses)
                 problems.append((
                     "problem=%08d_vars=%02d_sat=%d" % (n_problems, n_vars, is_sat),
                     n_vars, iclauses, is_sat))
