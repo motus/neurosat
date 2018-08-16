@@ -54,7 +54,7 @@ problems = []
 batches = []
 n_nodes_in_batch = 0
 
-filenames = os.listdir(opts.dimacs_dir)
+filenames = sorted(os.listdir(opts.dimacs_dir))
 
 if not (opts.max_dimacs is None):
     filenames = filenames[:opts.max_dimacs]
