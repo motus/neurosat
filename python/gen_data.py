@@ -13,18 +13,15 @@
 # limitations under the License.
 # ==============================================================================
 
-import math
 import os
-import numpy as np
 import random
 import pickle
 import argparse
-import sys
 import multiprocessing
 
 from solver import solve_sat
 from mk_problem import mk_batch_problem
-from gen_sr_dimacs import init_opts, gen_iclause_pair_n_vars
+from gen_sr_dimacs import init_opts, gen_iclause_pair_n_vars, write_dimacs_to_file
 
 
 def get_splits(n_pairs, min_n, max_n):
@@ -34,9 +31,10 @@ def get_splits(n_pairs, min_n, max_n):
                for _ in range(max_n - min_n)))) + [(max_n, n_pairs)]
 
 
-def mk_dataset_filename(opts, n_batches, n_file, n_problems):
-    return "%s/f=%03dnpb=%d_nb=%04d_p=%06d.pkl" % (
-        opts.out_dir, n_file, opts.max_nodes_per_batch, n_batches, n_problems)
+def mk_dataset_filename(opts, n_batches, n_file, n_problems, is_dimacs=False):
+    return "%s/f=%03dnpb=%d_nb=%04d_p=%06d.%s" % (
+        opts.out_dir, n_file, opts.max_nodes_per_batch, n_batches, n_problems,
+        "dimacs" if is_dimacs else "pkl")
 
 
 def gen_file(n_file):
@@ -71,7 +69,7 @@ def gen_file(n_file):
                 n_nodes_in_batch += n_nodes
 
                 if n_nodes_in_batch >= opts.max_nodes_per_batch:
-                    batches.append(mk_batch_problem(problems))
+                    batches.append(problems)
                     print("file %03d batch %4d done (%2d vars, %6d problems)..." % (n_file, n_batch, n_vars, len(problems)))
                     problems = []
                     n_nodes_in_batch = 0
@@ -80,18 +78,27 @@ def gen_file(n_file):
         prev_pairs = total_pairs
 
         if problems:
-            batches.append(mk_batch_problem(problems))
+            batches.append(problems)
             print("file %03d batch %4d done (%2d vars, %6d problems)..." % (n_file, n_batch, n_vars, len(problems)))
             problems = []
             n_nodes_in_batch = 0
             n_batch += 1
 
-    dataset_filename = mk_dataset_filename(opts, len(batches), n_file, n_problems)
-    print("# Writing %d batches and %d problems to %s..."
-            % (len(batches), n_problems, dataset_filename))
     random.shuffle(batches)
+
+    dataset_filename = mk_dataset_filename(opts, len(batches), n_file, n_problems)
+    print("# Writing %d batches and %d problems to pickle file %s..."
+          % (len(batches), n_problems, dataset_filename))
     with open(dataset_filename, 'wb') as f_dump:
-        pickle.dump(batches, f_dump)
+        pickle.dump([mk_batch_problem(problems) for problems in batches], f_dump)
+
+    dimacs_filename = mk_dataset_filename(opts, len(batches), n_file, n_problems, is_dimacs=True)
+    print("# Writing %d batches and %d problems to DIMACS file %s..."
+          % (len(batches), n_problems, dimacs_filename))
+    with open(dimacs_filename, 'w') as dimacs_dump:
+        for problems in batches:
+            for (_name, n_vars, iclauses, is_sat) in problems:
+                write_dimacs_to_file(n_vars, iclauses, dimacs_dump, is_sat=is_sat)
 
     return n_problems
 

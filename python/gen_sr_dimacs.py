@@ -13,19 +13,24 @@
 # limitations under the License.
 # ==============================================================================
 
-import math
 import numpy as np
 import random
 import argparse
 import PyMiniSolvers.minisolvers as minisolvers
 
+
 def write_dimacs_to(n_vars, iclauses, out_filename):
     with open(out_filename, 'w') as f:
-        f.write("p cnf %d %d\n" % (n_vars, len(iclauses)))
-        for c in iclauses:
-            for x in c:
-                f.write("%d " % x)
-            f.write("0\n")
+        write_dimacs_to_file(n_vars, iclauses, f)
+
+def write_dimacs_to_file(n_vars, iclauses, f, is_sat=None):
+    if is_sat is not None:
+        f.write("\nc sat %d\n" % is_sat)
+    f.write("p cnf %d %d\n" % (n_vars, len(iclauses)))
+    for c in iclauses:
+        for x in c:
+            f.write("%d " % x)
+        f.write("0\n")
 
 def mk_out_filenames(opts, n_vars, t):
     prefix = "%s/sr_n=%d_pk2=%.2f_pg=%.2f_t=%d" % \
