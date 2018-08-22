@@ -57,6 +57,10 @@ class NeuroSAT(object):
             self.L_vote = MLP(opts, opts.d, repeat_end(opts.d, opts.n_vote_layers, 1), name=("L_vote"))
             self.vote_bias = tf.get_variable(name="vote_bias", shape=[], initializer=tf.zeros_initializer())
 
+    def parameters_count(self):
+        return sum(np.prod(v.get_shape().as_list())
+                   for v in tf.trainable_variables(scope='params'))
+
     def declare_placeholders(self):
         self.n_vars = tf.placeholder(tf.int32, shape=[], name='n_vars')
         self.n_lits = tf.placeholder(tf.int32, shape=[], name='n_lits')

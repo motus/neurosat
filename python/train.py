@@ -56,6 +56,8 @@ g = NeuroSAT(opts)
 if opts.restore_id and opts.restore_epoch:
     g.restore()
 
+print("Total number of parameters: %d" % g.parameters_count())
+
 for epoch in range(opts.n_epochs):
     result = g.train_epoch(epoch)
     (efilename, etrain_cost, etrain_mat, lr, etime) = result
