@@ -16,9 +16,10 @@
 import os
 import time
 import pickle
-import mk_problem
+
 
 class ProblemsLoader(object):
+
     def __init__(self, filenames):
         self.filenames = filenames
         print(self.filenames)
@@ -37,13 +38,14 @@ class ProblemsLoader(object):
         start_time = time.clock()
         with open(filename, 'rb') as f:
             problems = pickle.load(f)
-        print("Loaded  %s in %.2fs" % (filename, time.clock() - start_time))
+        print("Loaded %d batches in %.2fs" % (len(problems), time.clock() - start_time))
         self.next_file_num += 1
-        assert(len(problems) > 0)
-        return problems, filename
+        assert len(problems) > 0
+        return (problems, filename)
 
     def reset(self):
         self.next_file_num = 0
+
 
 def init_problems_loader(dirname):
     return ProblemsLoader([dirname + "/" + f for f in os.listdir(dirname)])

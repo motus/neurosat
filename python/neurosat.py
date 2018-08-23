@@ -198,11 +198,14 @@ class NeuroSAT(object):
         epoch_train_mat = ConfusionMatrix()
 
         train_problems, train_filename = self.train_problems_loader.get_next()
-        for problem in train_problems:
+        for (i, problem) in enumerate(train_problems, 1):
+            print("Training on batch %5d of %d..." % (i, len(train_problems)))
+            batch_start = time.clock()
             d = self.build_feed_dict(problem)
             _, logits, cost = self.sess.run([self.apply_gradients, self.logits, self.cost], feed_dict=d)
             epoch_train_cost += cost
             epoch_train_mat.update(problem.is_sat, logits > 0)
+            print("Training on batch %5d done in %.2fs" % (i, time.clock() - batch_start))
 
         epoch_train_cost /= len(train_problems)
         epoch_train_mat = epoch_train_mat.get_percentages()
