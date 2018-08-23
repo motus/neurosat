@@ -14,6 +14,7 @@
 # ==============================================================================
 
 import os
+import time
 import pickle
 import mk_problem
 
@@ -33,8 +34,10 @@ class ProblemsLoader(object):
             self.reset()
         filename = self.filenames[self.next_file_num]
         print("Loading %s..." % filename)
+        start_time = time.clock()
         with open(filename, 'rb') as f:
             problems = pickle.load(f)
+        print("Loaded  %s in %.2fs" % (filename, time.clock() - start_time))
         self.next_file_num += 1
         assert(len(problems) > 0)
         return problems, filename
