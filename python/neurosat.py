@@ -258,8 +258,9 @@ class NeuroSAT(object):
                 xs = list(zip([phi(vlit) for vlit in range(batch * n_vars_per_batch, (batch+1) * n_vars_per_batch)],
                               [phi(flip_vlit(vlit)) for vlit in range(batch * n_vars_per_batch, (batch+1) * n_vars_per_batch)]))
                 def one_of(a, b): return (a and (not b)) or (b and (not a))
-                assert(all([one_of(x[0], x[1]) for x in xs]))
-                return [x[0] for x in xs]
+                # assert(all([one_of(x[0], x[1]) for x in xs]))
+                is_valid = all([one_of(x[0], x[1]) for x in xs])
+                return (is_valid, [x[0] for x in xs])
 
             if self.solves(problem, batch, decode_cheap_A): solutions.append(reify(decode_cheap_A))
             elif self.solves(problem, batch, decode_cheap_B): solutions.append(reify(decode_cheap_B))
@@ -284,7 +285,7 @@ class NeuroSAT(object):
 
                 if self.solves(problem, batch, decode_kmeans_A): solutions.append(reify(decode_kmeans_A))
                 elif self.solves(problem, batch, decode_kmeans_B): solutions.append(reify(decode_kmeans_B))
-                else: solutions.append(None)
+                else: solutions.append((True, None))
 
         return solutions
 
