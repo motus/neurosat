@@ -21,21 +21,24 @@ import random
 import pickle
 import argparse
 import sys
+import zipfile
+
 from solver import solve_sat
 from mk_problem import mk_batch_problem
 
-def parse_dimacs(filename):
+
+def parse_dimacs(filename, open_func=open, decode_func=str):
     try:
-        with open(filename, 'r') as f:
-            lines = f.readlines()
-        i = 0
-        while lines[i].strip().split(" ")[0] == "c":
-            i += 1
-        header = lines[i].strip().split(" ")
-        assert(header[0] == "p")
-        n_vars = int(header[2])
-        iclauses = [[int(s) for s in line.strip().split(" ")[:-1]] for line in lines[i+1:]]
-        return n_vars, iclauses
+        with open_func(filename, 'r') as f:
+            lines = [decode_func(ln) for ln in f.readlines()]
+            i = 0
+            while lines[i].strip().split(" ")[0] == "c":
+                i += 1
+            header = lines[i].strip().split(" ")
+            assert(header[0] == "p")
+            n_vars = int(header[2])
+            iclauses = [[int(s) for s in line.strip().split(" ")[:-1]] for line in lines[i+1:]]
+            return n_vars, iclauses
     except Exception as ex:
         sys.stderr.write("Error parsing %s :: %s\n" % (filename, ex))
         raise
@@ -54,19 +57,27 @@ parser.add_argument('--max_dimacs', action='store', dest='max_dimacs', type=int,
 
 opts = parser.parse_args()
 
+open_func = open
+decode_func = str
+if zipfile.is_zipfile(opts.dimacs_dir):
+    zip_file = zipfile.ZipFile(opts.dimacs_dir)
+    filenames = [info for info in zip_file.infolist() if info.filename[-1] != '/']
+    open_func = zip_file.open
+    decode_func = bytes.decode
+else:
+    filenames = ["%s/%s" % (opts.dimacs_dir, filename)
+                 for filename in sorted(os.listdir(opts.dimacs_dir))]
+
+if opts.max_dimacs is not None:
+    filenames = filenames[:opts.max_dimacs]
+
 problems = []
 batches = []
 n_nodes_in_batch = 0
-
-filenames = sorted(os.listdir(opts.dimacs_dir))
-
-if not (opts.max_dimacs is None):
-    filenames = filenames[:opts.max_dimacs]
-
 prev_n_vars = None
 
 for filename in filenames:
-    n_vars, iclauses = parse_dimacs("%s/%s" % (opts.dimacs_dir, filename))
+    n_vars, iclauses = parse_dimacs(filename, open_func, decode_func)
     n_clauses = len(iclauses)
     n_cells = sum([len(iclause) for iclause in iclauses])
 
