@@ -33,8 +33,8 @@ def write_dimacs_to_file(n_vars, iclauses, f, is_sat=None):
         f.write("0\n")
 
 def mk_out_filenames(opts, n_vars, t):
-    prefix = "%s/sr_n=%d_pk2=%.2f_pg=%.2f_t=%d" % \
-        (opts.out_dir, n_vars, opts.p_k_2, opts.p_geo, t)
+    prefix = "%s/sr_n=%d_mink=%d_maxk=%d_t=%d" % \
+        (opts.out_dir, n_vars, opts.min_k, opts.max_k, t)
     return ("%s_sat=0.dimacs" % prefix, "%s_sat=1.dimacs" % prefix)
 
 def generate_k_iclause(n, k):
@@ -43,10 +43,10 @@ def generate_k_iclause(n, k):
 
 
 def gen_iclause_pair(opts):
-    return _gen_iclause_pair(opts.min_n, opts.max_n, opts.p_k_2, opts.p_geo)
+    return _gen_iclause_pair(opts.min_n, opts.max_n, opts.min_k, opts.max_k)
 
 
-def _gen_iclause_pair(min_n, max_n, p_k_2, p_geo):
+def _gen_iclause_pair(min_n, max_n, min_k, max_k):
     n = random.randint(min_n, max_n)
 
     solver = minisolvers.MinisatSolver()
@@ -55,8 +55,7 @@ def _gen_iclause_pair(min_n, max_n, p_k_2, p_geo):
     iclauses = []
 
     while True:
-        k_base = 1 if random.random() < p_k_2 else 2
-        k = k_base + np.random.geometric(p_geo)
+        k = random.randint(min_k, min(max_k, n-1))
         iclause = generate_k_iclause(n, k)
 
         solver.add_clause(iclause)
@@ -83,7 +82,7 @@ def gen_iclause_pair_n_vars(opts, n_vars):
         `([], [])` -- a pair of (UNSAT problem, SAT problem).
     """
     _, iclauses, iclause_unsat, iclause_sat = \
-        _gen_iclause_pair(n_vars, n_vars, opts.p_k_2, opts.p_geo)
+        _gen_iclause_pair(n_vars, n_vars, opts.min_k, opts.max_k)
 
     return (iclauses + [iclause_unsat], iclauses + [iclause_sat])
 
@@ -95,8 +94,8 @@ def init_opts(parser):
     parser.add_argument('--min_n', action='store', dest='min_n', type=int, default=40)
     parser.add_argument('--max_n', action='store', dest='max_n', type=int, default=40)
 
-    parser.add_argument('--p_k_2', action='store', dest='p_k_2', type=float, default=0.3)
-    parser.add_argument('--p_geo', action='store', dest='p_geo', type=float, default=0.4)
+    parser.add_argument('--min_k', action='store', dest='min_k', type=int, default=2)
+    parser.add_argument('--max_k', action='store', dest='max_k', type=int, default=10)
 
     parser.add_argument('--py_seed', action='store', dest='py_seed', type=int, default=None)
     parser.add_argument('--np_seed', action='store', dest='np_seed', type=int, default=None)
