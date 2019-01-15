@@ -13,7 +13,7 @@
 # limitations under the License.
 # ==============================================================================
 
-import os
+import glob
 import time
 import pickle
 
@@ -48,4 +48,4 @@ class ProblemsLoader(object):
 
 
 def init_problems_loader(dirname):
-    return ProblemsLoader([dirname + "/" + f for f in os.listdir(dirname)])
+    return ProblemsLoader(glob.glob(dirname + '/*', recursive=True))
