@@ -69,12 +69,6 @@ class NeuroSAT(object):
         self.L_unpack = tf.sparse_placeholder(tf.float32, shape=[None, None], name='L_unpack')
         self.is_sat = tf.placeholder(tf.bool, shape=[None], name='is_sat')
 
-        self.iter_index = tf.placeholder(tf.int32, shape=[], name='iter_index')
-        self.L_h = tf.placeholder(tf.float32, shape=[None, self.opts.d], name='L_h')
-        self.L_c = tf.placeholder(tf.float32, shape=[None, self.opts.d], name='L_c')
-        self.C_h = tf.placeholder(tf.float32, shape=[None, self.opts.d], name='C_h')
-        self.C_c = tf.placeholder(tf.float32, shape=[None, self.opts.d], name='C_c')
-
         # useful helpers
         self.n_batches = tf.shape(self.is_sat)[0]
         self.n_vars_per_batch = tf.div(self.n_vars, self.n_batches)
@@ -100,28 +94,20 @@ class NeuroSAT(object):
 
         return i+1, L_state, C_state
 
-    def true_condition(self):
-        return (LSTMStateTuple(h=self.L_h, c=self.L_c), LSTMStateTuple(h=self.C_h, c=self.C_c))
-
-    def false_condition(self):
-        denom = tf.sqrt(tf.cast(self.opts.d, tf.float32))
-
-        L_output = tf.tile(tf.div(self.L_init, denom), [self.n_lits, 1])
-        C_output = tf.tile(tf.div(self.C_init, denom), [self.n_clauses, 1])
-
-        return (LSTMStateTuple(h=L_output, c=tf.zeros([self.n_lits, self.opts.d])),
-                LSTMStateTuple(h=C_output, c=tf.zeros([self.n_clauses, self.opts.d])))
-
     def pass_messages(self):
         with tf.name_scope('pass_messages') as scope:
+            denom = tf.sqrt(tf.cast(self.opts.d, tf.float32))
 
-            L_state, C_state = tf.cond(self.iter_index > 0, self.true_condition, self.false_condition)
+            L_output = tf.tile(tf.div(self.L_init, denom), [self.n_lits, 1])
+            C_output = tf.tile(tf.div(self.C_init, denom), [self.n_clauses, 1])
+
+            L_state = LSTMStateTuple(h=L_output, c=tf.zeros([self.n_lits, self.opts.d]))
+            C_state = LSTMStateTuple(h=C_output, c=tf.zeros([self.n_clauses, self.opts.d]))
+
             _, L_state, C_state = tf.while_loop(self.while_cond, self.while_body, [0, L_state, C_state])
 
         self.final_lits = L_state.h
         self.final_clauses = C_state.h
-        self.final_lits_c = L_state.c
-        self.final_clauses_c = C_state.c
 
     def compute_logits(self):
         with tf.name_scope('compute_logits') as scope:
@@ -190,35 +176,17 @@ class NeuroSAT(object):
         snapshot = "snapshots/run%d/snap-%d" % (self.opts.restore_id, self.opts.restore_epoch)
         self.saver.restore(self.sess, snapshot)
 
-    def build_feed_dict(self, problem, iter_index, init_L_h, init_L_c, init_C_h, init_C_c):
-        if iter_index > 0:
-            return {
-                self.iter_index: iter_index,
-                self.n_vars: problem.n_vars,
-                self.n_lits: problem.n_lits,
-                self.n_clauses: problem.n_clauses,
-                self.is_sat: problem.is_sat,
-                self.L_unpack: tf.SparseTensorValue(
-                    indices=problem.L_unpack_indices,
-                    values=np.ones(problem.L_unpack_indices.shape[0]),
-                    dense_shape=[problem.n_lits, problem.n_clauses])
-            }
-        else:
-            return {
-                self.iter_index: iter_index,
-                self.L_h = init_L_h,
-                self.L_c = init_L_c,
-                self.C_h = init_C_h,
-                self.C_c = init_C_c,
-                self.n_vars: problem.n_vars,
-                self.n_lits: problem.n_lits,
-                self.n_clauses: problem.n_clauses,
-                self.is_sat: problem.is_sat,
-                self.L_unpack: tf.SparseTensorValue(
-                    indices=problem.L_unpack_indices,
-                    values=np.ones(problem.L_unpack_indices.shape[0]),
-                    dense_shape=[problem.n_lits, problem.n_clauses])
-            }
+    def build_feed_dict(self, problem):
+        return {
+            self.n_vars: problem.n_vars,
+            self.n_lits: problem.n_lits,
+            self.n_clauses: problem.n_clauses,
+            self.is_sat: problem.is_sat,
+            self.L_unpack: tf.SparseTensorValue(
+                indices=problem.L_unpack_indices,
+                values=np.ones(problem.L_unpack_indices.shape[0]),
+                dense_shape=[problem.n_lits, problem.n_clauses])
+        }
 
     def train_epoch(self, epoch):
         if self.train_problems_loader is None:
@@ -232,7 +200,7 @@ class NeuroSAT(object):
         train_problems, train_filename = self.train_problems_loader.get_next()
         for (i, problem) in enumerate(train_problems, 1):
             print("Batch %5d of %d..." % (i, len(train_problems)), end='\r')
-            d = self.build_feed_dict(problem, 0, None, None, None, None)
+            d = self.build_feed_dict(problem)
             _, logits, cost = self.sess.run([self.apply_gradients, self.logits, self.cost], feed_dict=d)
             epoch_train_cost += cost
             epoch_train_mat.update(problem.is_sat, logits > 0)
@@ -258,7 +226,7 @@ class NeuroSAT(object):
             epoch_test_mat = ConfusionMatrix()
 
             for problem in test_problems:
-                d = self.build_feed_dict(problem, 0, None, None, None, None)
+                d = self.build_feed_dict(problem)
                 logits, cost = self.sess.run([self.logits, self.cost], feed_dict=d)
                 epoch_test_cost += cost
                 epoch_test_mat.update(problem.is_sat, logits > 0)
@@ -270,7 +238,7 @@ class NeuroSAT(object):
 
         return results
 
-    def find_solutions(self, problem, iter_index, init_L_h, init_L_c, init_C_h, init_C_c):
+    def find_solutions(self, problem):
         def flip_vlit(vlit):
             if vlit < problem.n_vars: return vlit + problem.n_vars
             else: return vlit - problem.n_vars
@@ -278,10 +246,8 @@ class NeuroSAT(object):
         n_batches = len(problem.is_sat)
         n_vars_per_batch = problem.n_vars // n_batches
 
-        d = self.build_feed_dict(problem, iter_index, init_L_h, init_L_c, init_C_h, init_C_c)
-        all_votes, final_lits, logits, costs, L_h, L_c, C_h, C_c= \
-            self.sess.run([self.all_votes, self.final_lits, self.logits, self.predict_costs,
-                self.final_lits, self.final_lits_c, self.final_clauses, self.final_clauses_c], feed_dict=d)
+        d = self.build_feed_dict(problem)
+        all_votes, final_lits, logits, costs = self.sess.run([self.all_votes, self.final_lits, self.logits, self.predict_costs], feed_dict=d)
 
         solutions = []
         for batch in range(len(problem.is_sat)):
@@ -321,7 +287,7 @@ class NeuroSAT(object):
                 elif self.solves(problem, batch, decode_kmeans_B): solutions.append(reify(decode_kmeans_B))
                 else: solutions.append((True, None))
 
-        return (solutions, L_h, L_c, C_h, C_c)
+        return solutions
 
     def solves(self, problem, batch, phi):
         start_cell = sum(problem.n_cells_per_batch[0:batch])
