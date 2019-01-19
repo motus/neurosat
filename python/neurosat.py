@@ -206,10 +206,10 @@ class NeuroSAT(object):
         else:
             return {
                 self.iter_index: iter_index,
-                self.L_h = init_L_h,
-                self.L_c = init_L_c,
-                self.C_h = init_C_h,
-                self.C_c = init_C_c,
+                self.L_h: init_L_h,
+                self.L_c: init_L_c,
+                self.C_h: init_C_h,
+                self.C_c: init_C_c,
                 self.n_vars: problem.n_vars,
                 self.n_lits: problem.n_lits,
                 self.n_clauses: problem.n_clauses,
