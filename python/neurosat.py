@@ -114,7 +114,6 @@ class NeuroSAT(object):
 
     def pass_messages(self):
         with tf.name_scope('pass_messages') as scope:
-
             L_state, C_state = tf.cond(self.iter_index > 0, self.true_condition, self.false_condition)
             _, L_state, C_state = tf.while_loop(self.while_cond, self.while_body, [0, L_state, C_state])
 
@@ -279,7 +278,7 @@ class NeuroSAT(object):
         n_vars_per_batch = problem.n_vars // n_batches
 
         d = self.build_feed_dict(problem, iter_index, init_L_h, init_L_c, init_C_h, init_C_c)
-        all_votes, final_lits, logits, costs, L_h, L_c, C_h, C_c= \
+        all_votes, final_lits, logits, costs, L_h, L_c, C_h, C_c = \
             self.sess.run([self.all_votes, self.final_lits, self.logits, self.predict_costs,
                 self.final_lits, self.final_lits_c, self.final_clauses, self.final_clauses_c], feed_dict=d)
 
