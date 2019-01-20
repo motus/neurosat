@@ -191,26 +191,12 @@ class NeuroSAT(object):
 
     def build_feed_dict(self, problem, iter_index=0,
                         init_L_h=None, init_L_c=None, init_C_h=None, init_C_c=None):
-
-        if iter_index == 0:
-            return {
-                self.iter_index: iter_index,
-                self.n_vars: problem.n_vars,
-                self.n_lits: problem.n_lits,
-                self.n_clauses: problem.n_clauses,
-                self.is_sat: problem.is_sat,
-                self.L_unpack: tf.SparseTensorValue(
-                    indices=problem.L_unpack_indices,
-                    values=np.ones(problem.L_unpack_indices.shape[0]),
-                    dense_shape=[problem.n_lits, problem.n_clauses])
-            }
-
         return {
             self.iter_index: iter_index,
-            self.L_h: init_L_h,
-            self.L_c: init_L_c,
-            self.C_h: init_C_h,
-            self.C_c: init_C_c,
+            self.L_h: init_L_h or np.zeros([1, self.opts.d]),  # problem.n_lits, self.opts.d
+            self.L_c: init_L_c or np.zeros([1, self.opts.d]),  # problem.n_lits, self.opts.d
+            self.C_h: init_C_h or np.zeros([1, self.opts.d]),  # problem.n_clauses, self.opts.d
+            self.C_c: init_C_c or np.zeros([1, self.opts.d]),  # problem.n_clauses, self.opts.d
             self.n_vars: problem.n_vars,
             self.n_lits: problem.n_lits,
             self.n_clauses: problem.n_clauses,
