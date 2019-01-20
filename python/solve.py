@@ -43,11 +43,19 @@ g = NeuroSAT(opts)
 g.restore()
 
 filenames = [opts.solve_dir + "/" + f for f in os.listdir(opts.solve_dir)]
+
 for filename in filenames:
+
     with open(filename, 'rb') as f:
         problems = pickle.load(f)
 
     for problem in problems:
-        solutions = g.find_solutions(problem)
+
+        init_L_h, init_L_c, init_C_h, init_C_c = None, None, None, None
+
+        for iter_index in range(opts.n_rounds):
+            solutions, init_L_h, init_L_c, init_C_h, init_C_c = \
+                g.find_solutions(problem, iter_index, init_L_h, init_L_c, init_C_h, init_C_c)
+
         for batch, solution in enumerate(solutions):
             print("[%s] %s" % (problem.dimacs[batch], str(solution)))
