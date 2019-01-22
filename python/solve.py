@@ -22,6 +22,7 @@ import pickle
 import sys
 import os
 import time
+import glob
 import argparse
 from options import add_neurosat_options
 from neurosat import NeuroSAT
@@ -45,7 +46,8 @@ print(opts)
 g = NeuroSAT(opts)
 g.restore()
 
-filenames = [opts.solve_dir + "/" + f for f in os.listdir(opts.solve_dir)]
+# filenames = [opts.solve_dir + "/" + f for f in os.listdir(opts.solve_dir)]
+filenames = glob.glob(opts.solve_dir + '/*', recursive=True)
 
 for filename in filenames:
 
