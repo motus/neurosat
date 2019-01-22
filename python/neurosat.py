@@ -277,8 +277,8 @@ class NeuroSAT(object):
                 self.final_lits, self.final_lits_c, self.final_clauses, self.final_clauses_c], feed_dict=d)
 
         if solutions is None:
-            # each solution is pair (is_valid, solution)
-            solutions = [(True, None) for _ in range(len(problem.is_sat))]
+            # each solution is (is_valid, iteration, solution)
+            solutions = [(True, 0, None) for _ in range(len(problem.is_sat))]
 
         for batch in range(len(problem.is_sat)):
             decode_cheap_A = (lambda vlit: all_votes[vlit, 0] > all_votes[flip_vlit(vlit), 0])
@@ -319,7 +319,7 @@ class NeuroSAT(object):
                 else: solution = (True, None)
 
             if solution[0] and solution[1] is not None:
-                solutions[batch] = solution
+                solutions[batch] = (True, iter_index, solution[1])
 
         return (solutions, L_h, L_c, C_h, C_c)
 
