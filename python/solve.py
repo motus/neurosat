@@ -21,6 +21,7 @@ import subprocess
 import pickle
 import sys
 import os
+import time
 import argparse
 from options import add_neurosat_options
 from neurosat import NeuroSAT
@@ -52,17 +53,22 @@ for filename in filenames:
     with open(filename, 'rb') as f:
         problems = pickle.load(f)
 
-    for problem in problems:
+    for i, problem in enumerate(problems, 1):
 
         solutions = None
         init_L_h, init_L_c, init_C_h, init_C_c = None, None, None, None
 
+        start = time.clock()
         for iter_index in range(outer_rounds):
-            print("Round %3d of %d..." % (iter_index + 1, outer_rounds), end='\r')
             solutions, init_L_h, init_L_c, init_C_h, init_C_c = \
                 g.find_solutions(problem, iter_index,
                                  init_L_h, init_L_c, init_C_h, init_C_c, solutions)
 
-        print()
+        num_solutions = 0
         for batch, solution in enumerate(solutions):
             print("[%s] %s" % (problem.dimacs[batch], str(solution)))
+            if solution[0] and solution[2] is not None:
+                num_solutions += 1
+
+        print("Batch %5d of %d: %d of %d solutions found. %d rounds ran in %.2f s" % (
+            i, len(problems), num_solutions, len(solutions), outer_rounds, time.clock() - start))
