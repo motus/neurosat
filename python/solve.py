@@ -34,6 +34,7 @@ parser.add_argument('restore_id', action='store', type=int)
 parser.add_argument('restore_epoch', action='store', type=int)
 parser.add_argument('n_rounds', action='store', type=int)
 parser.add_argument('n_outer_rounds', action='store', type=int)
+parser.add_argument('--limit_examples', action='store', type=int, default=0)
 
 opts = parser.parse_args()
 setattr(opts, 'run_id', None)
@@ -51,6 +52,7 @@ for filename in filenames:
     with open(filename, 'rb') as f:
         problems = pickle.load(f)
 
+    total_examples = 0
     for i, problem in enumerate(problems, 1):
 
         solutions = None
@@ -73,3 +75,7 @@ for filename in filenames:
         print("%s batch %d/%d: %d/%d=%.2f%% solved. %d rounds ran in %.2f s" % (
             filename, i, len(problems), num_solutions, len(solutions),
             num_solutions * 100.0 / len(solutions), opts.n_outer_rounds, time.clock() - start))
+
+        total_examples += len(solutions)
+        if opts.limit_examples > 0 and total_examples >= opts.limit_examples:
+            break
