@@ -33,6 +33,7 @@ parser.add_argument('solve_dir', action='store', type=str)
 parser.add_argument('restore_id', action='store', type=int)
 parser.add_argument('restore_epoch', action='store', type=int)
 parser.add_argument('n_rounds', action='store', type=int)
+parser.add_argument('n_outer_rounds', action='store', type=int)
 
 opts = parser.parse_args()
 setattr(opts, 'run_id', None)
@@ -42,9 +43,6 @@ print(opts)
 
 g = NeuroSAT(opts)
 g.restore()
-
-outer_rounds = opts.n_rounds
-opts.n_rounds = 1
 
 filenames = [opts.solve_dir + "/" + f for f in os.listdir(opts.solve_dir)]
 
@@ -59,16 +57,19 @@ for filename in filenames:
         init_L_h, init_L_c, init_C_h, init_C_c = None, None, None, None
 
         start = time.clock()
-        for iter_index in range(outer_rounds):
+        for iter_index in range(opts.n_outer_rounds):
+            print("Round %4d of %d..." % (iter_index + 1, opts.n_outer_rounds), end='\r')
             solutions, init_L_h, init_L_c, init_C_h, init_C_c = \
                 g.find_solutions(problem, iter_index,
                                  init_L_h, init_L_c, init_C_h, init_C_c, solutions)
 
+        print()
         num_solutions = 0
         for batch, solution in enumerate(solutions):
             print("[%s] %s" % (problem.dimacs[batch], str(solution)))
             if solution[0] and solution[2] is not None:
                 num_solutions += 1
 
-        print("Batch %5d of %d: %d of %d solutions found. %d rounds ran in %.2f s" % (
-            i, len(problems), num_solutions, len(solutions), outer_rounds, time.clock() - start))
+        print("%s batch %d/%d: %d/%d=%.2f%% solved. %d rounds ran in %.2f s" % (
+            filename, i, len(problems), num_solutions, len(solutions),
+            num_solutions * 100.0 / len(solutions), opts.n_outer_rounds, time.clock() - start))
