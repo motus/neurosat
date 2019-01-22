@@ -191,12 +191,18 @@ class NeuroSAT(object):
 
     def build_feed_dict(self, problem, iter_index=0,
                         init_L_h=None, init_L_c=None, init_C_h=None, init_C_c=None):
+
+        if init_L_h is None: init_L_h = np.zeros([1, self.opts.d])  # problem.n_lits, self.opts.d
+        if init_L_c is None: init_L_c = np.zeros([1, self.opts.d])  # problem.n_lits, self.opts.d
+        if init_C_h is None: init_C_h = np.zeros([1, self.opts.d])  # problem.n_clauses, self.opts.d
+        if init_C_c is None: init_C_c = np.zeros([1, self.opts.d])  # problem.n_clauses, self.opts.d
+
         return {
             self.iter_index: iter_index,
-            self.L_h: init_L_h or np.zeros([1, self.opts.d]),  # problem.n_lits, self.opts.d
-            self.L_c: init_L_c or np.zeros([1, self.opts.d]),  # problem.n_lits, self.opts.d
-            self.C_h: init_C_h or np.zeros([1, self.opts.d]),  # problem.n_clauses, self.opts.d
-            self.C_c: init_C_c or np.zeros([1, self.opts.d]),  # problem.n_clauses, self.opts.d
+            self.L_h: init_L_h,
+            self.L_c: init_L_c,
+            self.C_h: init_C_h,
+            self.C_c: init_C_c,
             self.n_vars: problem.n_vars,
             self.n_lits: problem.n_lits,
             self.n_clauses: problem.n_clauses,
