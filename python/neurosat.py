@@ -263,7 +263,7 @@ class NeuroSAT(object):
 
         return results
 
-    def find_solutions(self, problem, iter_index, init_L_h, init_L_c, init_C_h, init_C_c):
+    def find_solutions(self, problem, iter_index, init_L_h, init_L_c, init_C_h, init_C_c, solutions):
         def flip_vlit(vlit):
             if vlit < problem.n_vars: return vlit + problem.n_vars
             else: return vlit - problem.n_vars
@@ -276,7 +276,10 @@ class NeuroSAT(object):
             self.sess.run([self.all_votes, self.final_lits, self.logits, self.predict_costs,
                 self.final_lits, self.final_lits_c, self.final_clauses, self.final_clauses_c], feed_dict=d)
 
-        solutions = []
+        if solutions is None:
+            # each solution is pair (is_valid, solution)
+            solutions = [(True, None) for _ in range(len(problem.is_sat))]
+
         for batch in range(len(problem.is_sat)):
             decode_cheap_A = (lambda vlit: all_votes[vlit, 0] > all_votes[flip_vlit(vlit), 0])
             decode_cheap_B = (lambda vlit: not decode_cheap_A(vlit))
@@ -289,8 +292,9 @@ class NeuroSAT(object):
                 is_valid = all([one_of(x[0], x[1]) for x in xs])
                 return (is_valid, [x[0] for x in xs])
 
-            if self.solves(problem, batch, decode_cheap_A): solutions.append(reify(decode_cheap_A))
-            elif self.solves(problem, batch, decode_cheap_B): solutions.append(reify(decode_cheap_B))
+            solution = None
+            if self.solves(problem, batch, decode_cheap_A): solution = reify(decode_cheap_A)
+            elif self.solves(problem, batch, decode_cheap_B): solution = reify(decode_cheap_B)
             else:
 
                 L = np.reshape(final_lits, [2 * n_batches, n_vars_per_batch, self.opts.d])
@@ -310,9 +314,12 @@ class NeuroSAT(object):
 
                 decode_kmeans_B = (lambda vlit: not decode_kmeans_A(vlit))
 
-                if self.solves(problem, batch, decode_kmeans_A): solutions.append(reify(decode_kmeans_A))
-                elif self.solves(problem, batch, decode_kmeans_B): solutions.append(reify(decode_kmeans_B))
-                else: solutions.append((True, None))
+                if self.solves(problem, batch, decode_kmeans_A): solution = reify(decode_kmeans_A)
+                elif self.solves(problem, batch, decode_kmeans_B): solution = reify(decode_kmeans_B)
+                else: solution = (True, None)
+
+            if solution[0] and solution[1] is not None:
+                solutions[batch] = solution
 
         return (solutions, L_h, L_c, C_h, C_c)
 

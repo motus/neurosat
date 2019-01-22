@@ -54,11 +54,15 @@ for filename in filenames:
 
     for problem in problems:
 
+        solutions = None
         init_L_h, init_L_c, init_C_h, init_C_c = None, None, None, None
 
         for iter_index in range(outer_rounds):
+            print("Round %3d of %d..." % (iter_index + 1, outer_rounds), end='\r')
             solutions, init_L_h, init_L_c, init_C_h, init_C_c = \
-                g.find_solutions(problem, iter_index, init_L_h, init_L_c, init_C_h, init_C_c)
+                g.find_solutions(problem, iter_index,
+                                 init_L_h, init_L_c, init_C_h, init_C_c, solutions)
 
+        print()
         for batch, solution in enumerate(solutions):
             print("[%s] %s" % (problem.dimacs[batch], str(solution)))
