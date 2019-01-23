@@ -319,7 +319,7 @@ class NeuroSAT(object):
                 else: solution = (True, None)
 
             if solution[0] and solution[1] is not None:
-                solutions[batch] = (True, iter_index, solution[1])
+                solutions[batch] = (True, iter_index + 1, solution[1])
 
         return (solutions, L_h, L_c, C_h, C_c)
 
